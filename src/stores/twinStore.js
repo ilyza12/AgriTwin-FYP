@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '@/services/api'
 
 export const useTwinStore = defineStore('twin', () => {
   // =========================================
@@ -121,6 +122,21 @@ export const useTwinStore = defineStore('twin', () => {
     }
   }
 
+  async function fetchBackendData() {
+    const data = await api.getLatestReadings()
+    if (data) {
+      // Pinia will automatically update the UI wherever these variables are used
+      liveSensors.value = {
+        temperature: data.temperature,
+        humidity: data.humidity,
+        soilMoisture: data.soilMoisture,
+        phLevel: data.phLevel,
+        salinity: data.salinity,
+        lightIntensity: data.lightIntensity,
+      }
+    }
+  }
+
   return {
     liveSensors,
     simParams,
@@ -130,6 +146,7 @@ export const useTwinStore = defineStore('twin', () => {
     updateLiveReadings,
     updateSimParam,
     resetSimulation,
+    fetchBackendData,
     applyPreset,
   }
 })

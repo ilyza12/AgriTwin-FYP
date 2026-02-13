@@ -16,12 +16,8 @@
       </div>
 
       <div class="crop-selector">
-        <label>Selected Crop</label>
-        <select v-model="selectedCrop">
-          <option value="Rice">🌾 Rice</option>
-          <option value="Wheat">🌾 Wheat</option>
-          <option value="Corn">🌽 Corn</option>
-        </select>
+        <label>Crop Name</label>
+        <div class="crop-display">🌾 Rice</div>
       </div>
 
       <div class="status-section">

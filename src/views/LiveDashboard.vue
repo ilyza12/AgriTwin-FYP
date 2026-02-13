@@ -112,6 +112,7 @@
 </template>
 
 <script setup>
+import { onMounted, onUnmounted } from 'vue'
 import NavBar from '../components/common/NavBar.vue'
 import SensorCard from '../components/live/SensorCard.vue'
 // Import the component we just created
@@ -121,7 +122,22 @@ import { useTwinStore } from '../stores/twinStore'
 import { storeToRefs } from 'pinia'
 
 const twinStore = useTwinStore()
+let pollingTimer = null
 const { liveSensors, liveAlerts } = storeToRefs(twinStore)
+
+onMounted(() => {
+  // 1. Fetch immediately
+  twinStore.fetchBackendData()
+
+  // 2. Poll every 2 seconds
+  pollingTimer = setInterval(() => {
+    twinStore.fetchBackendData()
+  }, 2000)
+})
+
+onUnmounted(() => {
+  clearInterval(pollingTimer)
+})
 </script>
 
 <style scoped>

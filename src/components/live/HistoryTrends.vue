@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -43,8 +43,8 @@ import {
   Filler,
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
+import api from '@/services/api' // Import the API
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -60,16 +60,44 @@ ChartJS.register(
 const metrics = ['All', 'Temperature', 'Moisture', 'pH', 'Humidity', 'Salinity', 'Light Intensity']
 const timeRanges = ['24h', '7d', '30d']
 const selectedMetric = ref('All')
-const selectedRange = ref('7d')
+const selectedRange = ref('24h') // Default to 24h
 
-// Mock Data (Static for now, can be connected to Store later)
+// Reactive storage for DB data
+const dbData = ref([])
+
+// 1. FETCH DATA FUNCTION
+const loadHistory = async () => {
+  const data = await api.getHistory(selectedRange.value)
+  dbData.value = data
+}
+
+// 2. Load on startup & when range changes
+onMounted(loadHistory)
+watch(selectedRange, loadHistory)
+
+// 3. TRANSFORM DATA FOR CHART
 const chartData = computed(() => {
+  // If no data, return empty structure
+  if (!dbData.value.length) return { labels: [], datasets: [] }
+
+  // A. Create Labels (X-Axis)
+  // Format timestamp: "14:00" (for 24h) or "Feb 10" (for 7d)
+  const labels = dbData.value.map((row) => {
+    const date = new Date(row.timestamp + 'Z')
+    if (selectedRange.value === '24h') {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    }
+  })
+
+  // B. Create Datasets (Y-Axis)
   return {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: labels,
     datasets: [
       {
         label: 'Temperature (°C)',
-        data: [24, 25, 24.5, 23, 24, 25, 26],
+        data: dbData.value.map((d) => d.temperature),
         borderColor: '#f39c12',
         backgroundColor: 'rgba(243, 156, 18, 0.1)',
         fill: true,
@@ -78,7 +106,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Moisture (%)',
-        data: [68, 70, 72, 71, 69, 68, 70],
+        data: dbData.value.map((d) => d.soilMoisture), // Note: matches DB column name
         borderColor: '#3498db',
         backgroundColor: 'rgba(52, 152, 219, 0.1)',
         fill: true,
@@ -87,7 +115,7 @@ const chartData = computed(() => {
       },
       {
         label: 'pH Level',
-        data: [6.5, 6.6, 6.5, 6.7, 6.6, 6.5, 6.6],
+        data: dbData.value.map((d) => d.phLevel),
         borderColor: '#9b59b6',
         backgroundColor: 'rgba(155, 89, 182, 0.1)',
         fill: true,
@@ -95,8 +123,8 @@ const chartData = computed(() => {
         hidden: selectedMetric.value !== 'All' && selectedMetric.value !== 'pH',
       },
       {
-        label: 'Humidity Level (%)',
-        data: [95.4, 88.3, 66.1, 72.9, 89.1, 60.4, 75.3],
+        label: 'Humidity (%)',
+        data: dbData.value.map((d) => d.humidity),
         borderColor: '#ff42ae',
         backgroundColor: 'rgba(243, 167, 206, 0.1)',
         fill: true,
@@ -104,8 +132,8 @@ const chartData = computed(() => {
         hidden: selectedMetric.value !== 'All' && selectedMetric.value !== 'Humidity',
       },
       {
-        label: 'Salinity Level (dS/m)',
-        data: [0.12, 0.27, 0.54, 0.33, 0.84, 0.73, 0.41],
+        label: 'Salinity (dS/m)',
+        data: dbData.value.map((d) => d.salinity),
         borderColor: '#006806',
         backgroundColor: 'rgba(184, 218, 135, 0.1)',
         fill: true,
@@ -113,8 +141,8 @@ const chartData = computed(() => {
         hidden: selectedMetric.value !== 'All' && selectedMetric.value !== 'Salinity',
       },
       {
-        label: 'Light Intensity Level (%)',
-        data: [75.3, 79.7, 64.6, 50.3, 42.3, 69.7, 79.0],
+        label: 'Light Intensity (%)',
+        data: dbData.value.map((d) => d.lightIntensity),
         borderColor: '#c9ba00',
         backgroundColor: 'rgba(255, 243, 70, 0.1)',
         fill: true,
@@ -125,13 +153,11 @@ const chartData = computed(() => {
   }
 })
 
-// Chart Configuration
+// Keep chart options same
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: {
-    legend: { position: 'bottom' },
-  },
+  plugins: { legend: { position: 'bottom' } },
   scales: {
     y: { beginAtZero: true },
     x: { grid: { display: false } },
