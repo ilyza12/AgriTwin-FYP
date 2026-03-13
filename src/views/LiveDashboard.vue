@@ -16,56 +16,56 @@
         <div class="sensor-grid">
           <SensorCard
             title="Temperature"
-            :value="liveSensors.temperature"
+            :value="liveSensorData.temperature"
             unit="°C"
             icon="🌡️"
             range="20-35°C"
-            :percentage="(liveSensors.temperature / 50) * 100"
-            :isCritical="liveSensors.temperature > 35"
+            :percentage="(liveSensorData.temperature / 50) * 100"
+            :isCritical="liveSensorData.temperature > 35"
           />
           <SensorCard
             title="Humidity"
-            :value="liveSensors.humidity"
+            :value="liveSensorData.humidity"
             unit="%"
             icon="💧"
             range="70-90%"
-            :percentage="liveSensors.humidity"
-            :isCritical="liveSensors.humidity < 70"
+            :percentage="liveSensorData.humidity"
+            :isCritical="liveSensorData.humidity < 70"
           />
           <SensorCard
             title="Soil Moisture"
-            :value="liveSensors.soilMoisture"
+            :value="liveSensorData.moisture"
             unit="%"
             icon="🌱"
             range="80-95%"
-            :percentage="liveSensors.soilMoisture"
-            :isCritical="liveSensors.soilMoisture < 80"
+            :percentage="liveSensorData.moisture"
+            :isCritical="liveSensorData.moisture < 80"
           />
           <SensorCard
             title="pH Level"
-            :value="liveSensors.phLevel"
+            :value="liveSensorData.ph"
             unit=""
             icon="⚗️"
             range="5.5-6.5"
-            :percentage="(liveSensors.phLevel / 14) * 100"
-            :isCritical="liveSensors.phLevel < 5.5 || liveSensors.phLevel > 7"
+            :percentage="(liveSensorData.ph / 14) * 100"
+            :isCritical="liveSensorData.ph < 5.5 || liveSensorData.ph > 7"
           />
           <SensorCard
             title="Salinity"
-            :value="liveSensors.salinity"
+            :value="liveSensorData.salinity"
             unit="dS/m"
             icon="⚡"
             range="0.0-0.5 dS/m"
-            :percentage="(liveSensors.salinity / 2) * 100"
-            :isCritical="liveSensors.salinity > 0.5"
+            :percentage="(liveSensorData.salinity / 2) * 100"
+            :isCritical="liveSensorData.salinity > 0.5"
           />
           <SensorCard
             title="Light Intensity"
-            :value="liveSensors.lightIntensity"
+            :value="liveSensorData.light"
             unit="%"
             icon="☀️"
             range="60-80%"
-            :percentage="liveSensors.lightIntensity"
+            :percentage="liveSensorData.light"
             :isCritical="false"
           />
         </div>
@@ -115,28 +115,34 @@
 import { onMounted, onUnmounted } from 'vue'
 import NavBar from '../components/common/NavBar.vue'
 import SensorCard from '../components/live/SensorCard.vue'
-// Import the component we just created
 import HistoryTrends from '../components/live/HistoryTrends.vue'
 
+// Import MQTT service instead of HTTP polling
+import {
+  liveSensorData,
+  isMqttConnected,
+  startMqttClient,
+  stopMqttClient,
+} from '@/services/mqttClient.js'
+
+// We still keep twinStore just for the AI alerts and History logic if you need them
 import { useTwinStore } from '../stores/twinStore'
 import { storeToRefs } from 'pinia'
 
 const twinStore = useTwinStore()
-let pollingTimer = null
-const { liveSensors, liveAlerts } = storeToRefs(twinStore)
+const { liveAlerts } = storeToRefs(twinStore)
 
 onMounted(() => {
-  // 1. Fetch immediately
-  twinStore.fetchBackendData()
+  // 1. Connect directly to HiveMQ for instant sensor updates!
+  startMqttClient()
 
-  // 2. Poll every 2 seconds
-  pollingTimer = setInterval(() => {
-    twinStore.fetchBackendData()
-  }, 2000)
+  // 2. Fetch history or alerts once on load
+  twinStore.fetchBackendData()
 })
 
 onUnmounted(() => {
-  clearInterval(pollingTimer)
+  // Disconnect MQTT when leaving the page to save resources
+  stopMqttClient()
 })
 </script>
 
