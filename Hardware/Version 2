@@ -1,0 +1,243 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <DHT.h>
+
+// --- PIN DEFINITIONS ---
+#define DHTPIN 4          
+#define DHTTYPE DHT11     
+#define MOISTURE_PIN 32   
+#define PH_POT_PIN 33     
+#define TDS_PIN 34        
+#define LIGHT_PIN 35      
+
+// --- WI-FI & MQTT CONFIGURATION ---
+const char* ssid = "Galaxy A33 5GF06F";
+const char* password = "vywa6030";
+const char* mqtt_server = "broker.hivemq.com";
+const int mqtt_port = 1883;
+const char* mqtt_topic = "agritwin/sensors/live";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+DHT dht(DHTPIN, DHTTYPE);
+
+// ========================================
+// 🌶️ CALIBRATION - SCIENTIFICALLY ALIGNED
+// ========================================
+
+// SOIL MOISTURE CALIBRATION ✅
+const int SOIL_DRY = 2450;           // Measured in air (0.0% VWC)
+const int SOIL_WET = 800;            // Measured in water (100% relative saturation)
+const float SOIL_WILTING = 13.1;     // Wilting point limit
+const float OPTIMAL_MIN = 23.0;      // Optimal minimum
+const float OPTIMAL_MAX = 27.0;      // Optimal maximum
+const float SOIL_SATURATION = 45.0;  // FAO Standard: Max VWC% for mineral soil
+
+// LIGHT INTENSITY
+const float LUX_TO_PPFD = 0.0185;    // Linear conversion factor for prototype
+
+// ========================================
+// HELPER FUNCTIONS
+// ========================================
+
+void setup_wifi() {
+  delay(10);
+  Serial.println("\nConnecting to WiFi...");
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("\n✅ WiFi connected!");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("Connecting to MQTT...");
+    // Generate a randomized client ID to prevent broker collisions
+    String clientId = "AgriTwin-" + String(random(0xffff), HEX);
+    
+    if (client.connect(clientId.c_str())) {
+      Serial.println(" ✅ Connected");
+    } else {
+      Serial.print(" ❌ Failed (rc=");
+      Serial.print(client.state());
+      Serial.println(") Retry in 5s");
+      delay(5000);
+    }
+  }
+}
+
+// ========================================
+// SOIL MOISTURE - FLAWLESS MATH LOGIC
+// ========================================
+float readSoilMoisture() {
+  // Take multiple readings and average (reduces electrical noise)
+  long sum = 0;
+  for(int i = 0; i < 5; i++) {
+    sum += analogRead(MOISTURE_PIN);
+    delay(10);
+  }
+  int raw = sum / 5;
+  
+  // 1. Map to 0-100% relative wetness based on physical extremes
+  float relativePercent = ((float)(SOIL_DRY - raw) / (SOIL_DRY - SOIL_WET)) * 100.0;
+  relativePercent = constrain(relativePercent, 0, 100);
+  
+  // 2. Convert to absolute Volumetric Water Content (0.0% to 45.0% Max)
+  float volumetric = (relativePercent / 100.0) * SOIL_SATURATION;
+  
+  return volumetric;
+}
+
+String getSoilStatus(float moisture) {
+  if (moisture < SOIL_WILTING) return "critical";
+  if (moisture < OPTIMAL_MIN) return "low";
+  if (moisture >= OPTIMAL_MIN && moisture <= OPTIMAL_MAX) return "optimal";
+  if (moisture > OPTIMAL_MAX) return "high"; 
+  return "acceptable";
+}
+
+// ========================================
+// SETUP
+// ========================================
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  
+  // Enforce 12-bit ADC resolution (Max digital reading of 4095)
+  analogReadResolution(12);
+  
+  setup_wifi();
+  client.setServer(mqtt_server, mqtt_port);
+  
+  Serial.println("\n╔═══════════════════════════════════════╗");
+  Serial.println("║  🌶️  CAPSICUM ANNUUM DIGITAL TWIN   ║");
+  Serial.println("║       Edge Node Initialized           ║");
+  Serial.println("╚═══════════════════════════════════════╝\n");
+}
+
+// ========================================
+// MAIN LOOP
+// ========================================
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+  
+  // ========================================
+  // 1. READ ALL SENSORS
+  // ========================================
+  
+  // Temperature & Humidity
+  float temp = dht.readTemperature(); 
+  float hum = dht.readHumidity();     
+  if (isnan(temp) || isnan(hum)) { 
+    temp = 0.0; 
+    hum = 0.0; 
+  }
+  
+  // Soil Moisture (Volumetric %)
+  float soilMoisture = readSoilMoisture();
+  String soilStatus = getSoilStatus(soilMoisture);
+  
+  // Light Intensity
+  int lightRaw = analogRead(LIGHT_PIN);
+  int lightPercent = constrain(map(lightRaw, 4095, 0, 0, 100), 0, 100);
+  int lightLux = map(lightRaw, 4095, 0, 0, 50000);
+  float lightPPFD = lightLux * LUX_TO_PPFD;
+  
+  // pH Level
+  int phRaw = analogRead(PH_POT_PIN);
+  float phValue = (phRaw / 4095.0) * 14.0;
+  
+  // Salinity (dS/m) - DFRobot Polynomial Curve
+  int tdsRaw = analogRead(TDS_PIN);
+  
+  // Convert 12-bit digital raw value to real-world Voltage (3.3V logic)
+  float voltage = tdsRaw * (3.3 / 4095.0);
+  
+  // 3rd-degree polynomial to find PPM (using 0.5 K-Value for NaCl equivalence)
+  float tdsValue = (133.42 * pow(voltage, 3) - 255.86 * pow(voltage, 2) + 857.39 * voltage) * 0.5;
+  
+  // Convert PPM to standard agricultural ECe (dS/m)
+  float salinity = tdsValue / 640.0;
+  
+  // ========================================
+  // 2. DISPLAY IN SERIAL MONITOR
+  // ========================================
+  
+  Serial.println("═══════════════════════════════════════");
+  Serial.println("📊 LIVE SENSOR DATA:");
+  Serial.println("═══════════════════════════════════════");
+  
+  Serial.print("🌡️  Temperature:   ");
+  Serial.print(temp, 1);
+  Serial.println(" °C");
+  
+  Serial.print("💧 Humidity:      ");
+  Serial.print(hum, 1);
+  Serial.println(" %");
+  
+  Serial.print("🌱 Soil Moisture: ");
+  Serial.print(soilMoisture, 1);
+  Serial.print(" % (VWC) [");
+  Serial.print(soilStatus);
+  Serial.println("]");
+  
+  Serial.print("☀️  Light:         ");
+  Serial.print(lightPPFD, 1);
+  Serial.print(" µmol/m²/s (");
+  Serial.print(lightPercent);
+  Serial.println("%)");
+  
+  Serial.print("⚗️  pH Level:      ");
+  Serial.println(phValue, 2);
+  
+  Serial.print("⚡ Salinity (ECe): ");
+  Serial.print(salinity, 2);
+  Serial.println(" dS/m");
+  
+  Serial.println("═══════════════════════════════════════\n");
+  
+  // ========================================
+  // 3. CREATE JSON PAYLOAD
+  // ========================================
+  
+  String payload = "{";
+  payload += "\"temperature\":" + String(temp, 1) + ",";
+  payload += "\"humidity\":" + String(hum, 1) + ",";
+  payload += "\"moisture\":" + String(soilMoisture, 1) + ",";
+  payload += "\"soil_status\":\"" + soilStatus + "\",";
+  payload += "\"light\":" + String(lightPPFD, 1) + ",";
+  payload += "\"light_percent\":" + String(lightPercent) + ",";
+  payload += "\"ph\":" + String(phValue, 2) + ",";
+  payload += "\"salinity\":" + String(salinity, 2) + ",";
+  payload += "\"timestamp\":" + String(millis());
+  payload += "}";
+  
+  // ========================================
+  // 4. PUBLISH TO MQTT
+  // ========================================
+  
+  Serial.println("📤 Publishing to MQTT Topic: " + String(mqtt_topic));
+  Serial.println(payload);
+  
+  bool success = client.publish(mqtt_topic, payload.c_str());
+  
+  if (success) {
+    Serial.println("✅ Published successfully!\n");
+  } else {
+    Serial.println("❌ Publish failed!\n");
+  }
+  
+  // Wait 5 seconds to align precisely with the Flask AI polling cycle
+  delay(5000);
+}
