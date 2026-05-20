@@ -165,7 +165,7 @@ void loop() {
   float voltage = tdsRaw * (3.3 / 4095.0);
   
   // 3rd-degree polynomial to find PPM (using 0.5 K-Value for NaCl equivalence)
-  float tdsValue = (133.42 * pow(voltage, 3) - 255.86 * pow(voltage, 2) + 857.39 * voltage) * 0.5;
+  float tdsValue = (133.42 * pow(voltage, 3) - 255.86 * pow(voltage, 2) + 857.39 * voltage) * 0.65;
   
   // Convert PPM to standard agricultural ECe (dS/m)
   float salinity = tdsValue / 640.0;
