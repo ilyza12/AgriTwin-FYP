@@ -1,5 +1,5 @@
 <template>
-  <div class="sensor-card" :class="{ critical: isCritical }">
+  <div class="sensor-card" :class="status">
     <div class="card-header">
       <span class="icon">{{ icon }}</span>
       <span class="status-dot"></span>
@@ -16,7 +16,11 @@
     <div class="card-footer">
       <div class="range-info">
         <span>Optimal: {{ range }}</span>
-        <span class="status-text">{{ isCritical ? 'Critical' : 'Optimal' }}</span>
+        
+        <span class="status-label" style="text-transform: capitalize;">
+          {{ status }}
+        </span>
+        
       </div>
       <div class="progress-bar">
         <div class="fill" :style="{ width: percentage + '%' }"></div>
@@ -32,7 +36,7 @@ defineProps({
   unit: String,
   icon: String,
   range: String,
-  isCritical: Boolean,
+  status: String,
   percentage: Number,
 })
 </script>
@@ -47,13 +51,18 @@ defineProps({
   transition: transform 0.2s;
 }
 
+/* 🚀 1. ROOT CARD COLORS (Background & Border) */
+.sensor-card.optimal {
+  border-left: 4px solid #27ae60;
+  background: #f0fdf4;
+}
+.sensor-card.suboptimal {
+  border-left: 4px solid #f39c12;
+  background: #fff9e6; /* Soft amber background */
+}
 .sensor-card.critical {
   border-left: 4px solid #e74c3c;
   background: #fff5f5;
-}
-.sensor-card:not(.critical) {
-  border-left: 4px solid #27ae60;
-  background: #f0fdf4;
 }
 
 .card-header {
@@ -64,29 +73,32 @@ defineProps({
 .icon {
   font-size: 1.2rem;
 }
+
+/* 🚀 2. STATUS DOT COLORS */
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #27ae60;
 }
-.critical .status-dot {
-  background: #e74c3c;
-}
+.optimal .status-dot { background: #27ae60; }
+.suboptimal .status-dot { background: #f39c12; }
+.critical .status-dot { background: #e74c3c; }
 
 .value-box {
   display: flex;
   align-items: baseline;
   gap: 5px;
 }
+
+/* 🚀 3. MAIN NUMBER (VALUE) COLORS */
 .value {
   font-size: 2rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #2c3e50; /* Default dark gray for optimal */
 }
-.critical .value {
-  color: #c0392b;
-}
+.suboptimal .value { color: #d68910; } /* Darker amber for readability */
+.critical .value { color: #c0392b; }
+
 .unit {
   color: #7f8c8d;
   font-weight: 500;
@@ -102,10 +114,14 @@ defineProps({
   color: #7f8c8d;
   margin-bottom: 5px;
 }
-.critical .status-text {
-  color: #c0392b;
+
+/* 🚀 4. STATUS TEXT LABEL COLORS */
+.status-label {
   font-weight: bold;
 }
+.optimal .status-label { color: #27ae60; }
+.suboptimal .status-label { color: #f39c12; }
+.critical .status-label { color: #c0392b; }
 
 .progress-bar {
   width: 100%;
@@ -114,12 +130,14 @@ defineProps({
   border-radius: 3px;
   overflow: hidden;
 }
+
+/* 🚀 5. PROGRESS BAR FILL COLORS */
 .fill {
   height: 100%;
-  background: #27ae60;
   border-radius: 3px;
+  transition: width 0.3s ease;
 }
-.critical .fill {
-  background: #e74c3c;
-}
+.optimal .fill { background: #27ae60; }
+.suboptimal .fill { background: #f39c12; }
+.critical .fill { background: #e74c3c; }
 </style>

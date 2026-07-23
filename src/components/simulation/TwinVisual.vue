@@ -1,231 +1,178 @@
 <template>
-  <div class="visual-card">
+  <div class="visual-container">
     <div class="visual-header">
-      <div class="title-row">
+      <div class="title">
         <span class="icon">🧊</span>
-        <h4>Crop Health Model</h4>
+        <h3>Crop Health Model</h3>
       </div>
-      <div class="view-toggles">
-        <span class="badge status" :class="healthStatus.toLowerCase()">{{ healthStatus }}</span>
-        <div class="toggle-group">
+      <div class="controls">
+        <div class="toggle">
           <button class="active">2D</button>
-          <button>3D</button>
+          <button class="disabled">3D</button>
         </div>
       </div>
     </div>
 
-    <div class="sim-window">
-      <div class="stats-overlay">
-        <div class="stat-tag sun">☀️ {{ light }}%</div>
-        <div class="stat-tag water">💧 {{ moisture }}%</div>
-        <div class="stat-tag temp">🌡️ {{ temperature }}°C</div>
+    <div class="scene-area">
+      <div class="sensor-badges">
+        <span class="badge">☀️ {{ light }}%</span>
+        <span class="badge">💧 {{ moisture }}%</span>
+        <span class="badge">🌡️ {{ temperature }}°C</span>
       </div>
 
-      <div class="scene">
-        <div class="sky"></div>
-        <div class="soil"></div>
-
-        <div class="plant-container" :class="healthStatus.toLowerCase()">
-          <div class="stem"></div>
-          <div class="leaf leaf-1"></div>
-          <div class="leaf leaf-2"></div>
-          <div class="leaf leaf-3"></div>
-          <div class="head">🌾</div>
-        </div>
+      <div class="construction-zone">
+        <span class="emoji">🚧</span>
+        <h2>Visualisation Under Construction</h2>
       </div>
+
+      <div class="sky"></div>
+      <div class="ground"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
+// We MUST keep the props so SimDashboard.vue doesn't crash when it passes data here!
+defineProps({
   temperature: Number,
   moisture: Number,
-  light: Number,
-})
-
-// Simple logic to determine if plant looks "Healthy" or "Wilted"
-const healthStatus = computed(() => {
-  if (props.temperature > 38 || props.moisture < 30) return 'Critical'
-  return 'Healthy'
+  light: Number
 })
 </script>
 
 <style scoped>
-.visual-card {
+.visual-container {
   background: white;
   border-radius: 12px;
-  padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
-  height: 100%;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 500px;
+  overflow: hidden;
 }
 
 .visual-header {
+  padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
 }
-.title-row {
+
+.title {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.title-row h4 {
+
+.title h3 {
   margin: 0;
+  font-size: 1.1rem;
   color: #2c3e50;
 }
 
-.view-toggles {
+.toggle {
   display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.badge {
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  color: white;
-}
-.badge.healthy {
-  background: #2c3e50;
-}
-.badge.critical {
-  background: #c0392b;
+  background: #f1f3f5;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-.toggle-group {
-  background: #f1f2f6;
-  border-radius: 6px;
-  padding: 2px;
-  display: flex;
-}
-.toggle-group button {
+.toggle button {
   border: none;
-  background: none;
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  padding: 5px 12px;
   cursor: pointer;
-  border-radius: 4px;
+  background: transparent;
   color: #7f8c8d;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
-.toggle-group button.active {
+
+.toggle button.active {
   background: white;
   color: #2c3e50;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* SCENE */
-.sim-window {
-  flex: 1;
-  border-radius: 12px;
-  overflow: hidden;
+.toggle button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* SCENE AREA */
+.scene-area {
+  flex-grow: 1;
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 400px;
 }
 
-.stats-overlay {
+.sensor-badges {
   position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
+  top: 20px;
+  width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   z-index: 10;
 }
-.stat-tag {
-  background: rgba(255, 255, 255, 0.9);
-  padding: 5px 12px;
+
+.sensor-badges .badge {
+  background: white;
+  padding: 6px 15px;
   border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #555;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #2c3e50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.scene {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-.sky {
-  height: 70%;
-  background: linear-gradient(to bottom, #e0f7fa, #b2ebf2);
-}
-.soil {
-  height: 30%;
-  background: #d7ccc8;
-  border-top: 4px solid #a1887f;
-}
-
-/* PLANT ANIMATION */
-.plant-container {
+/* THE NEW CONSTRUCTION ZONE */
+.construction-zone {
   position: absolute;
-  bottom: 25%; /* Sits on soil */
+  top: 45%;
   left: 50%;
-  transform: translateX(-50%);
-  transition: all 1s ease;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 20px 40px;
+  border-radius: 12px;
+  border: 2px dashed #f39c12;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  backdrop-filter: blur(4px);
 }
 
-.stem {
-  width: 8px;
-  height: 120px;
-  background: #4caf50;
-  margin: 0 auto;
-  border-radius: 4px;
-}
-.leaf {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  background: #66bb6a;
-  border-radius: 0 50% 50% 50%;
-}
-.leaf-1 {
-  bottom: 30px;
-  left: -30px;
-  transform: rotate(-45deg);
-}
-.leaf-2 {
-  bottom: 60px;
-  right: -30px;
-  transform: rotate(135deg) scaleX(-1);
-}
-.leaf-3 {
-  bottom: 90px;
-  left: -20px;
-  transform: rotate(-30deg) scale(0.8);
-}
-.head {
-  position: absolute;
-  top: -30px;
-  left: -10px;
-  font-size: 2rem;
+.construction-zone .emoji {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 10px;
 }
 
-/* CRITICAL STATE CSS */
-.plant-container.critical .stem {
-  background: #d35400;
-  transform: translateX(-50%) rotate(5deg);
+.construction-zone h2 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 1.4rem;
 }
-.plant-container.critical .leaf {
-  background: #e67e22;
-  transform-origin: bottom left;
+
+.construction-zone p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
-.plant-container.critical .leaf-1 {
-  transform: rotate(10deg) translateY(20px);
+
+/* BACKGROUNDS */
+.sky {
+  background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 100%);
+  height: 70%;
+  width: 100%;
 }
-.plant-container.critical .leaf-2 {
-  transform: rotate(170deg) translateY(20px);
-}
-.plant-container.critical .head {
-  opacity: 0.5;
+
+.ground {
+  background: linear-gradient(180deg, #d7ccc8 0%, #a1887f 100%);
+  height: 30%;
+  width: 100%;
+  border-top: 2px solid #8d6e63;
 }
 </style>

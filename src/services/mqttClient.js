@@ -6,6 +6,7 @@ export const liveSensorData = reactive({
   temperature: 0,
   humidity: 0,
   moisture: 0,
+  light_percent: 0,
   light: 0,
   ph: 0,
   salinity: 0,

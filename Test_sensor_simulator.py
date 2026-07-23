@@ -1,41 +1,56 @@
-import requests
+import paho.mqtt.client as mqtt
 import time
 import random
+import json
 
-# The URL of your Flask Backend
-URL = "http://127.0.0.1:5000/api/sensors/update"
+# HiveMQ Public Broker
+BROKER = "broker.hivemq.com"
+PORT = 1883
+TOPIC = "agritwin/sensors/live"
 
 def generate_sensor_data():
+    # Notice the keys: moisture, ph, light (Exactly what the ESP32 will send!)
     return {
-        "temperature": round(random.uniform(28.0, 32.0), 1),
-        "humidity": round(random.uniform(75.0, 85.0), 1),
-        "soilMoisture": round(random.uniform(82.0, 95.0), 1),
-        "phLevel": round(random.uniform(5.8, 6.2), 2),
-        "salinity": round(random.uniform(0.1, 0.3), 2),
-        "lightIntensity": round(random.uniform(65.0, 75.0), 1)
+        "temperature": round(random.uniform(24.0, 26.0), 1), # Optimal Chili Temp
+        "humidity": round(random.uniform(70.0, 80.0), 1),
+        "moisture": round(random.uniform(24.0, 26.0), 1),
+        "ph": round(random.uniform(6.0, 6.5), 2),
+        "salinity": round(random.uniform(0.5, 1.0), 2),
+        "light": round(random.uniform(600.0, 800.0), 1)
     }
 
-print("🌱 STARTING SENSOR SIMULATOR...")
-print(f"📡 Sending data to {URL} every 2 seconds...")
+#def generate_sensor_data():
+    # ⚠️ TEMPORARY NUKE VALUES TO TEST AI ANOMALY BANNER
+    #return {
+        #"temperature": 50.0,  # Lethal heat
+        #"humidity": 10.0,     # Complete dry-out
+        #"moisture": 0.0,      # Absolute drought
+        #"ph": 1.0,            # Pure acid
+        #"salinity": 10.0,     # Toxic salt levels
+        #"light": 0.0          # Pitch black
+    #}
 
-while True:
-    try:
-        # 1. Generate Data
-        payload = generate_sensor_data()
+print("🌱 STARTING ESP32 MQTT SIMULATOR...")
+print(f"📡 Connecting to {BROKER}...")
+
+client = mqtt.Client()
+client.connect(BROKER, PORT, 60)
+client.loop_start()
+
+print(f"✅ Connected! Publishing to topic: '{TOPIC}' every 2 seconds...\n")
+
+try:
+    while True:
+        payload_dict = generate_sensor_data()
+        payload_json = json.dumps(payload_dict)
         
-        # 2. Send to Flask (POST request)
-        response = requests.post(URL, json=payload)
+        # Publish exactly like the physical hardware would
+        client.publish(TOPIC, payload_json)
         
-        # 3. Print result
-        if response.status_code == 200:
-            print(f"✅ [LIVE] Sent: {payload['temperature']}°C | {payload['soilMoisture']}% Moisture")
-        elif response.status_code == 201:
-            print(f"💾 [SAVED] Data committed to Database!")
-        else:
-            print(f"⚠️ Error: {response.text}")
-            
+        print(f"✅ [MQTT PUBLISHED] {payload_json}")
         time.sleep(2) # Wait 2 seconds
         
-    except Exception as e:
-        print(f"❌ Connection Failed: {e}")
-        time.sleep(2)
+except KeyboardInterrupt:
+    print("\n🛑 Simulator stopped.")
+    client.loop_stop()
+    client.disconnect()

@@ -17,13 +17,11 @@
 
       <div class="crop-selector">
         <label>Crop Name</label>
-        <div class="crop-display">🌾 Rice</div>
+        <div class="crop-display">🌶️ Capsicum Annuum</div>
       </div>
 
       <div class="status-section">
         <div class="status-badge active"><span class="dot"></span> Live Data Stream Active</div>
-        <button class="icon-btn">↻</button>
-        <button class="icon-btn notification">🔔 <span class="badge">5</span></button>
       </div>
     </div>
   </header>
@@ -32,7 +30,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-const selectedCrop = ref('Rice')
+// const selectedCrop = ref('Rice')
 const currentDate = ref('')
 
 // Function to format date like "Wednesday, December 24, 2025 at 11:23 PM"

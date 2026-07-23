@@ -9,96 +9,118 @@
       </div>
 
       <section class="section-block">
-        <div class="section-header">
-          <h3>Real-Time Sensor Analytics</h3>
-          <p>🌾 Rice - Water-intensive cereal crop, requires flooded conditions</p>
-        </div>
-        <div class="sensor-grid">
-          <SensorCard
-            title="Temperature"
-            :value="liveSensorData.temperature"
-            unit="°C"
-            icon="🌡️"
-            range="20-35°C"
-            :percentage="(liveSensorData.temperature / 50) * 100"
-            :isCritical="liveSensorData.temperature > 35"
-          />
-          <SensorCard
-            title="Humidity"
-            :value="liveSensorData.humidity"
-            unit="%"
-            icon="💧"
-            range="70-90%"
-            :percentage="liveSensorData.humidity"
-            :isCritical="liveSensorData.humidity < 70"
-          />
-          <SensorCard
-            title="Soil Moisture"
-            :value="liveSensorData.moisture"
-            unit="%"
-            icon="🌱"
-            range="80-95%"
-            :percentage="liveSensorData.moisture"
-            :isCritical="liveSensorData.moisture < 80"
-          />
-          <SensorCard
-            title="pH Level"
-            :value="liveSensorData.ph"
-            unit=""
-            icon="⚗️"
-            range="5.5-6.5"
-            :percentage="(liveSensorData.ph / 14) * 100"
-            :isCritical="liveSensorData.ph < 5.5 || liveSensorData.ph > 7"
-          />
-          <SensorCard
-            title="Salinity"
-            :value="liveSensorData.salinity"
-            unit="dS/m"
-            icon="⚡"
-            range="0.0-0.5 dS/m"
-            :percentage="(liveSensorData.salinity / 2) * 100"
-            :isCritical="liveSensorData.salinity > 0.5"
-          />
-          <SensorCard
-            title="Light Intensity"
-            :value="liveSensorData.light"
-            unit="%"
-            icon="☀️"
-            range="60-80%"
-            :percentage="liveSensorData.light"
-            :isCritical="false"
-          />
-        </div>
-      </section>
+  <div class="section-header">
+    <h3>Real-Time Sensor Analytics</h3>
+    <p>🌶️ Capsicum annuum - Optimal temp 17-30°C, highly sensitive to water stress</p>
+  </div>
+  
+  <div class="sensor-grid">
+    
+    <SensorCard 
+      title="Temperature" 
+      :value="liveSensorData.temperature" 
+      unit="°C" 
+      icon="🌡️" 
+      range="17-30°C" 
+      :percentage="(liveSensorData.temperature / 50) * 100" 
+      :status="(liveSensorData.temperature < 8 || liveSensorData.temperature > 35) ? 'critical' : ((liveSensorData.temperature < 17 || liveSensorData.temperature > 30) ? 'suboptimal' : 'optimal')" 
+    />
+    
+    <SensorCard 
+      title="Humidity" 
+      :value="liveSensorData.humidity" 
+      unit="%" 
+      icon="💧" 
+      range="65-85%" 
+      :percentage="liveSensorData.humidity" 
+      :status="(liveSensorData.humidity < 40 || liveSensorData.humidity > 95) ? 'critical' : ((liveSensorData.humidity < 65 || liveSensorData.humidity > 85) ? 'suboptimal' : 'optimal')" 
+    />
+    
+    <SensorCard 
+      title="Soil Moisture" 
+      :value="liveSensorData.moisture" 
+      unit="%" 
+      icon="🌱" 
+      range="23-27%" 
+      :percentage="liveSensorData.moisture" 
+      :status="(liveSensorData.moisture < 13.1 || liveSensorData.moisture > 32) ? 'critical' : ((liveSensorData.moisture < 23 || liveSensorData.moisture > 27) ? 'suboptimal' : 'optimal')" 
+    />
+    
+    <SensorCard 
+      title="Salinity" 
+      :value="liveSensorData.salinity" 
+      unit="dS/m" 
+      icon="⚡" 
+      range="1.0-1.5 dS/m" 
+      :percentage="(liveSensorData.salinity / 5) * 100" 
+      :status="(liveSensorData.salinity < 0.3 || liveSensorData.salinity > 3.0) ? 'critical' : ((liveSensorData.salinity < 1.0 || liveSensorData.salinity > 1.5) ? 'suboptimal' : 'optimal')" 
+    />
+    
+    <SensorCard 
+      title="Light Intensity" 
+      :value="liveSensorData.light_percent" 
+      unit="%" 
+      icon="☀️" 
+      :range="`${liveSensorData.light} µmol | Opt: 600-1224`" 
+      :percentage="liveSensorData.light_percent" 
+      :status="(liveSensorData.light < 17.3 || liveSensorData.light > 1500) ? 'critical' : ((liveSensorData.light < 600 || liveSensorData.light > 1224) ? 'suboptimal' : 'optimal')" 
+    />
+    
+  </div>
+</section>
 
       <div class="split-section">
-        <section class="section-block half">
-          <div class="section-header row">
-            <h3>📹 Live Camera Feed</h3>
-            <span class="recording-badge">🔴 Recording</span>
+        
+        <CameraFeed :currentTime="currentTime" />
+
+        <section class="section-block col-ai">
+          <div class="section-header">
+            <h3>🧠 AI Insights & Yield</h3>
           </div>
-          <div class="camera-box">
-            <div class="video-overlay"><span>11:24:22 PM</span><button>REC</button></div>
+          
+          <div v-if="isLoadingAI" class="ai-card center-content">
+            <p>🤖 AI is analyzing current conditions...</p>
+          </div>
+
+          <div v-else class="ai-card">
+            <div class="yield-banner" v-if="yieldData.status === 'success'">
+              <div class="yield-text">
+                <span class="label">Plant Health (7-Day)</span>
+              </div>
+              <span class="prediction">{{ yieldData.yield_class }}</span>
+            </div>
+            <div class="yield-banner" v-else>
+              <span class="label">Yield Prediction</span>
+              <span class="prediction text-sm">Gathering Data...</span>
+            </div>
+
+            <!-- <div class="health-score-box">
+              <strong>Plant Health Score</strong>
+              <strong class="score-text">{{ liveAnalysis.health?.overall_score || 0 }}/100</strong>
+            </div> -->
+
+            <!-- <div v-if="liveAnalysis.recommendations?.irrigation?.action === 'irrigate'" class="alert-item" style="background: #fff3e0; color: #e65100; border-color: #ff9800;">
+              💧 Action Required: Irrigate ~{{ liveAnalysis.recommendations.irrigation.amount_liters }}L of water.
+            </div> -->
+
+            <div v-if="liveAnalysis.anomaly_detection?.is_anomaly" class="alert-item critical-alert">
+              🤖 AI STATISTICAL ANOMALY: Multi-variable stress detected.
+            </div>
+
+            <div v-if="!liveAnalysis.anomaly_detection?.is_anomaly" class="alert-item good">
+              ✅ Optimal conditions. No critical stress detected.
+            </div>
           </div>
         </section>
 
-        <section class="section-block half">
+        <section class="section-block col-twin">
           <div class="section-header">
-            <h3>🧠 AI Insights</h3>
+            <h3>🌱 Digital Twin View</h3>
           </div>
-          <div class="ai-card">
-            <div class="yield-banner">
-              <span class="label">Yield Prediction</span>
-              <span class="prediction">Medium</span>
+          <div class="twin-card" ref="twinContainer" id="live-twin-container">
             </div>
-            <div v-for="(alert, index) in liveAlerts" :key="index" class="alert-item">
-              ⚠️ {{ alert.message }}
-            </div>
-            <div v-if="liveAlerts.length === 0" class="alert-item good">
-              ✅ No critical issues detected.
-            </div>
-          </div>
         </section>
+
       </div>
 
       <section class="section-block">
@@ -112,37 +134,210 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import NavBar from '../components/common/NavBar.vue'
 import SensorCard from '../components/live/SensorCard.vue'
+import CameraFeed from '../components/live/CameraFeed.vue'
 import HistoryTrends from '../components/live/HistoryTrends.vue'
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
-// Import MQTT service instead of HTTP polling
+// MQTT imports
 import {
   liveSensorData,
   isMqttConnected,
   startMqttClient,
   stopMqttClient,
-} from '@/services/mqttClient.js'
+} from '@/services/mqttClient.js'   // Decoupled MQTT client runs in background
 
-// We still keep twinStore just for the AI alerts and History logic if you need them
 import { useTwinStore } from '../stores/twinStore'
-import { storeToRefs } from 'pinia'
 
 const twinStore = useTwinStore()
-const { liveAlerts } = storeToRefs(twinStore)
+
+// --- NEW AI STATE VARIABLES ---
+const isLoadingAI = ref(true)
+const yieldData = ref({})
+const liveAnalysis = ref({})
+const currentTime = ref(new Date().toLocaleTimeString())
+let aiPollingInterval = null
+let timeInterval = null
+
+// --- FETCH YIELD (Runs Once) ---
+
+// 🗣️ DEFENSE NOTE: Yield prediction only needs to be fetched once on load because a plant's 7-day harvest forecast doesn't fluctuate second-by-second. This saves significant processing power on the Flask backend.
+const fetchYieldPrediction = async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/ml/live-yield')   // Fetch 7-day forecast only once on load
+    const data = await response.json()
+    yieldData.value = data
+  } catch (error) {
+    console.error("Error fetching yield prediction:", error)
+  }
+}
+
+// --- FETCH LIVE ANALYSIS (Runs every 5 seconds) ---
+
+// 🗣️ DEFENSE NOTE: Unlike the yield, the anomaly detection and health scoring are polled dynamically. I architected this as an asynchronous fetch rather than a continuous websocket to prevent network congestion while still maintaining near-real-time AI oversight.
+const fetchLiveAnalysis = async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/ml/live-analysis')    // Async fetch prevents websocket network congestion
+    if (response.ok) {
+      const data = await response.json()
+      liveAnalysis.value = data
+      isLoadingAI.value = false // Hide loader once we have first data
+    }
+  } catch (error) {
+    console.error("Error fetching live AI analysis:", error)
+  }
+}
+
+// --- NEW DIGITAL TWIN 3D STATE ---
+const twinContainer = ref(null)
+let scene, camera, renderer, controls, animationId
+
+const initLiveTwin = () => {
+  if (!twinContainer.value) return;
+
+  // 1. Setup Scene & Get Dimensions
+  const width = twinContainer.value.clientWidth;
+  const height = twinContainer.value.clientHeight;
+  
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color('#ffffff'); // Matches the white card
+
+  // 2. Camera setup
+  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+  camera.position.set(0, 2.0, 6);
+
+  // 3. Renderer setup
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  twinContainer.value.appendChild(renderer.domElement);
+
+  // 4. Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambientLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(5, 10, 5);
+  scene.add(dirLight);
+
+  // 5. Controls (Allows user to rotate the plant)
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.enablePan = false;
+  controls.minDistance = 2; // Can't zoom in too close
+  controls.maxDistance = 8; // Can't zoom out too far
+  controls.target.set(0, 1.2, 0);
+
+  // 6. Load your No-Fruit Model!
+  const loader = new GLTFLoader();
+  loader.load('/chili_plant_nofruit.glb', (gltf) => {
+    const livePlant = gltf.scene;
+
+    // 🚀 THE FIX: Traverse the model and paint the white branches!
+    livePlant.traverse((child) => {
+      if (child.isMesh) {
+        const partName = child.name.toLowerCase();
+        
+        // If it's NOT a leaf, pot, soil, or the support stick... it's the stem!
+        if (!partName.includes('leaf') && 
+            !partName.includes('pot') && 
+            !partName.includes('soil') && 
+            !partName.includes('support')) {
+              
+          child.material = child.material.clone();
+          child.material.map = null; // Remove any broken textures
+          child.material.color.set('#5C4033'); // Bark brown
+          child.material.roughness = 0.9; // Make it look like rough wood
+        }
+      }
+    });
+
+    // ==========================================
+    // 🚀 THE FIX: Snap the bones into the "Healthy" pose
+    // ==========================================
+    if (gltf.animations && gltf.animations.length > 0) {
+      const liveMixer = new THREE.AnimationMixer(livePlant);
+      
+      gltf.animations.forEach((clip) => {
+        const action = liveMixer.clipAction(clip);
+        action.setEffectiveWeight(1);
+        action.play();
+        action.paused = true; // Freeze the animation immediately
+        action.time = 0;      // 0 = The perfectly upright, healthy frame
+      });
+      
+
+      liveMixer.update(0); // Force Three.js to calculate the bone attachments!
+    }
+
+    livePlant.position.set(0, -0.5, 0);
+    scene.add(livePlant);
+  });
+
+  // 7. Animation Loop
+  const animate = () => {
+    animationId = requestAnimationFrame(animate);
+    controls.update(); // Required for damping
+    renderer.render(scene, camera);
+  };
+  animate();
+
+  // 8. Handle Window Resizing seamlessly
+  window.addEventListener('resize', handleResize);
+}
+
+const handleResize = () => {
+  if (!twinContainer.value || !camera || !renderer) return;
+  const width = twinContainer.value.clientWidth;
+  const height = twinContainer.value.clientHeight;
+  
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
 
 onMounted(() => {
-  // 1. Connect directly to HiveMQ for instant sensor updates!
+  // 1. Connect to HiveMQ for instant sensor updates
   startMqttClient()
 
-  // 2. Fetch history or alerts once on load
+  // 2. Fetch History for the charts
   twinStore.fetchBackendData()
+
+  // 3. Initial AI Fetches
+  fetchYieldPrediction()
+  fetchLiveAnalysis()
+
+  initLiveTwin()
+
+  timeInterval = setInterval(() => {
+    currentTime.value = new Date().toLocaleTimeString()
+  }, 1000)
+
+  aiPollingInterval = setInterval(() => {
+    fetchLiveAnalysis()
+  }, 5000)    // 5-second polling balances real-time AI with minimal server load
 })
 
 onUnmounted(() => {
-  // Disconnect MQTT when leaving the page to save resources
   stopMqttClient()
+  clearInterval(aiPollingInterval)
+  clearInterval(timeInterval)
+  
+  // 🚀 CLEANUP 3D MEMORY
+
+  // 🗣️ DEFENSE NOTE: WebGL can easily cause memory leaks in Single Page Applications (SPAs). This explicit cleanup block destroys the renderer, clears the animation frame, and removes event listeners so the browser memory stays clean when navigating between routes.
+  window.removeEventListener('resize', handleResize)
+  if (animationId) cancelAnimationFrame(animationId)    // Kill render loop
+  if (renderer) renderer.dispose()    // Destroy WebGL context from GPU memory
+})
+
+onUnmounted(() => {
+  stopMqttClient()
+  clearInterval(aiPollingInterval)
+  clearInterval(timeInterval)
 })
 </script>
 
@@ -150,28 +345,23 @@ onUnmounted(() => {
 /* --- 1. GLOBAL CONTAINER SETUP --- */
 .dashboard-container {
   min-height: 100vh;
-  width: 100%; /* Force full width */
+  width: 100%;
   background-color: #f8f9fa;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  display: flex; /* Fixes alignment issues */
+  display: flex; 
   flex-direction: column;
 }
 
 /* --- 2. SCROLLABLE AREA --- */
 .scrollable-content {
-  /* Pushes content down so it's not hidden behind the Fixed Header */
   padding-top: 100px;
   padding-bottom: 50px;
-
-  /* Width Control */
   width: 100%;
-  max-width: 1600px; /* Increased width for big screens */
-  margin: 0 auto; /* Centers the content block */
-
-  /* Spacing */
+  max-width: 1600px; 
+  margin: 0 auto; 
   padding-left: 20px;
   padding-right: 20px;
-  box-sizing: border-box; /* Ensures padding doesn't break width */
+  box-sizing: border-box; 
 }
 
 /* --- 3. TABS --- */
@@ -179,7 +369,7 @@ onUnmounted(() => {
   display: flex;
   gap: 15px;
   margin-bottom: 30px;
-  padding-left: 5px; /* Aligns tabs with the cards */
+  padding-left: 5px; 
 }
 
 .tab {
@@ -191,7 +381,7 @@ onUnmounted(() => {
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s;
-  border: 2px solid transparent; /* Prevents jumping when active */
+  border: 2px solid transparent; 
 }
 
 .tab.active {
@@ -207,7 +397,7 @@ onUnmounted(() => {
 /* --- 4. SECTIONS & GRID --- */
 .section-block {
   margin-bottom: 40px;
-  width: 100%; /* Ensures sections fill the container */
+  width: 100%; 
 }
 
 .section-header {
@@ -236,94 +426,97 @@ onUnmounted(() => {
 /* SENSOR GRID - RESPONSIVE */
 .sensor-grid {
   display: grid;
-  /* Auto-fit: Creates as many columns as fit on the screen */
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
   width: 100%;
 }
 
-/* --- 5. SPLIT SECTION (Camera + AI) --- */
+/* --- 5. SPLIT SECTION (Camera + AI + Twin) --- */
 .split-section {
-  display: flex;
+  display: grid;
+  /* 50% Camera, 25% AI, 25% Digital Twin */
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 25px;
-  flex-wrap: wrap; /* Wraps on small screens */
   margin-bottom: 40px;
   width: 100%;
 }
 
-.half {
-  flex: 1; /* Both sides take equal space */
-  min-width: 350px; /* But don't shrink below 350px */
-}
-
-/* CAMERA BOX */
-.camera-box {
-  height: 400px; /* Taller camera view */
-  background: black;
-  border-radius: 12px;
-  position: relative;
-  background-image: url('https://images.unsplash.com/photo-1586771107445-d3ca888129ff?q=80&w=2072&auto=format&fit=crop');
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.recording-badge {
-  color: #e74c3c;
-  font-weight: bold;
-  font-size: 0.8rem;
-  animation: pulse 2s infinite;
-}
-
-.video-overlay {
-  position: absolute;
-  bottom: 15px;
-  left: 15px;
-  color: white;
+/* Ensure columns stretch to match height */
+.col-ai, .col-twin {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  font-family: monospace;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 5px 10px;
-  border-radius: 4px;
+  flex-direction: column;
 }
 
-.video-overlay button {
-  background: #e74c3c;
-  border: none;
-  color: white;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-}
+
 
 /* AI INSIGHTS CARD */
 .ai-card {
   background: white;
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
-  height: 100%; /* Matches height of camera box */
+  flex-grow: 1; 
   display: flex;
   flex-direction: column;
 }
 
-.yield-banner {
-  background: #fff9c4;
-  padding: 15px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
+.center-content {
+  justify-content: center;
   align-items: center;
 }
 
+/* 3D TWIN CARD */
+.twin-card {
+  background: white;
+  border-radius: 12px;
+  padding: 0; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid #eee;
+  flex-grow: 1; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; 
+}
+
+/* REFINED AI CARD INTERNALS */
+.yield-banner {
+  background: #fff9c4;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.yield-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .prediction {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: bold;
   color: #f57f17;
+}
+
+.health-score-box {
+  background: #e3f2fd; 
+  padding: 15px; 
+  border-radius: 8px; 
+  margin-bottom: 15px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  border-left: 4px solid #2196f3;
+}
+
+.score-text {
+  color: #1976d2; 
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 .alert-item {
@@ -343,15 +536,24 @@ onUnmounted(() => {
   border-color: #27ae60;
 }
 
-@keyframes pulse {
-  0% {
-    opacity: 1;
+
+
+/* RESPONSIVE LAYOUT BREAKPOINTS */
+@media (max-width: 1200px) {
+  .split-section {
+    grid-template-columns: 1fr 1fr; 
   }
-  50% {
-    opacity: 0.5;
+  .col-twin {
+    grid-column: span 2; 
   }
-  100% {
-    opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .split-section {
+    grid-template-columns: 1fr; 
+  }
+  .col-twin {
+    grid-column: span 1;
   }
 }
 </style>
